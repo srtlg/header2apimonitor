@@ -39,10 +39,10 @@ class ApiMonitorTypes:
         self.parse(ET.parse(path))
 
     @classmethod
-    def read_known_types(cls, includes=(), apimonitor_base_dir=None):
+    def read_known_types(cls, includes=None, apimonitor_base_dir=None):
         obj = cls()
         obj.apimonitor_base_dir = apimonitor_base_dir
-        if len(includes):
+        if includes:
             for inc in includes:
                 obj.parse_system_header(inc)
         else:
@@ -55,7 +55,7 @@ class ApiPrinter(c_ast.NodeVisitor):
         super().__init__()
         self.fout = fout
         self.success_is = 0
-        self.return_value_is_not_error = []
+        self.return_value_is_not_error = set()
         self.known_types = ApiMonitorTypes()
         self.unknown_types = set()
 
@@ -107,7 +107,7 @@ class CHeader:
         self.module = osp.splitext(osp.basename(filename))[0] + '.dll'
         self.ast = c_parser.CParser().parse(string, filename=filename)
         self.calling_convention = None
-        self.return_value_is_not_error = []
+        self.return_value_is_not_error = set()
         self.include = []
         self.success_is = 0
         self.known_types = ApiMonitorTypes()
@@ -178,8 +178,11 @@ def main():
     args = parse_args()
     cheader = CHeader.from_file(args.header_file)
     cheader.calling_convention = args.calling_convention
-    cheader.return_value_is_not_error = set(args.returns_true_boolean) | set(args.returns_true_int)
-    cheader.include = args.include
+    if args.returns_true_boolean:
+        cheader.return_value_is_not_error |= set(args.returns_true_boolean)
+    if args.returns_true_int:
+        cheader.return_value_is_not_error |= set(args.returns_true_int)
+    cheader.include = args.include if args.include else []
     if args.module:
         cheader.module = args.module
     if args.success_is:
