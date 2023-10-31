@@ -73,6 +73,11 @@ class ApiPrinter(c_ast.NodeVisitor):
                         raise RuntimeError
                 else:
                     raise RuntimeError
+            elif isinstance(param.type, c_ast.ArrayDecl):
+                if isinstance(param.type.type, c_ast.TypeDecl):
+                    typestr = (' '.join(param.type.type.quals + param.type.type.type.names)) + '*'
+                else:
+                    raise RuntimeError
             else:
                 raise RuntimeError
             if not self.known_types.is_defined(typestr):
